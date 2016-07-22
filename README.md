@@ -17,7 +17,9 @@ merge strategy on the same commits produce different results
    - Vanilla git
 
 ## Usage
-  - python git-compare-merge <repository-to-clone> <commit-id>{2..*}
+  ```shell
+  python git-compare-merge.py <repository-to-clone> <commit-id-a> <commit-id-b>
+  ```
   
 ## Todo
  - implement clone + merge + commit for gitkit-js
