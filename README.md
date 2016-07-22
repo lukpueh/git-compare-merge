@@ -1,19 +1,31 @@
-# Compare git merges using different git implementation
+# Compare git merges in different git implementations
 
- - Creates a new directory with timestamp
+Used to test if different git implementations using the same 
+merge strategy on the same commits produce different results
+
+ 
  - For every git implementation 
-    - clones repo (passed as argument) in subdirectory
+    - creates a new directory with timestamp
+    - clones repo (passed as argument) 
     - merges commits (passed as argument)
     - commits merges
- - Compares git clones of timestamp directory
+ - Compares git clones of timestamped directories
  
 ## Used git implementations
    - [libgit2](http://www.pygit2.org/)
    - [gitkit-js](https://github.com/SamyPesse/gitkit-js)
+   - Vanilla git
 
 ## Usage
   - python git-compare-merge <repository-to-clone> <commit-id>{2..*}
   
+## Todo
+ - implement clone + merge + commit for gitkit-js
+ - implement clone + merge + commit for vanilla git
+ - implement comparing
+
+ - support different merge stratagies
+
 
 
   
