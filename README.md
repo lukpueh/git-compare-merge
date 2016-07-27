@@ -25,9 +25,7 @@ merge strategy on the same commits produce different results
  - implement clone + merge + commit for gitkit-js
  - implement clone + merge + commit for vanilla git
  - implement comparing
-
  - support different merge stratagies
-
 
 
 
