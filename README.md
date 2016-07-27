@@ -27,6 +27,4 @@ merge strategy on the same commits produce different results
  - implement comparing
  - support different merge stratagies
 
-
-
-  
+ 
