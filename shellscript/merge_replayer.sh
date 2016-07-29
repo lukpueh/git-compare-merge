@@ -1,9 +1,16 @@
 #!/bin/bash
 
+########
+# Usage:
+# ./merge_replayer.sh <clonable-repo-paty> [pygit | vanilla]
+#
+# Note: Requires libgit2 and pygit2 installed and on the path
+########
+
 # include our functions
 . commit_utils.sh
 
-# We assume this is a path in the CWD
+# Local or remote
 REPO_TO_CLONE=$1
 
 # We assume there's a tool called $2.sh
@@ -11,9 +18,12 @@ REPO_TO_CLONE=$1
 TOOL_FOR_REPLAY=$2
 
 # the merge list can be obtained using the find_merges.sh script
-MERGE_LIST=$3
+# MERGE_LIST=$3
 
-TARGET_REPO="${REPO_TO_CLONE}-${TOOL_FOR_REPLAY}"
+# Extract the basename from a git clone URL
+REPO_BASENAME="$(basename -s .git $REPO_TO_CLONE)"
+
+TARGET_REPO="${REPO_BASENAME}-${TOOL_FOR_REPLAY}"
 MERGE_COMMAND="${TOOL_FOR_REPLAY}.sh" 
 
 # clone with vanilla (this is not a contentious step)
@@ -35,6 +45,7 @@ do
     all_parents=$(echo ${line} | sed "s/^.*\ //")
     first_parent=$(echo ${line} | cut -d ' ' -f 2)
     other_parents=$(echo ${all_parents} | sed "s/^.&\ //")
+
     git checkout -q -f ${first_parent}
     git checkout -q -b merges/${branch_name}
     ./${MERGE_COMMAND} ${other_parents}
@@ -55,4 +66,4 @@ do
 
     echo $this_tree ${all_parents} >> $TARGET_LOGFILE
 
-done < ${MERGE_LIST}
+done < <(./find_merges.sh $TARGET_REPO)
