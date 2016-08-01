@@ -38,8 +38,13 @@ cp empty-config ${TARGET_REPO}/.git/config
 # target logfile
 TARGET_LOGFILE=${TARGET_REPO}.merges
 
+counter=0
 while read line
 do
+    if [[ "$counter" -gt 100 ]]; 
+    then
+        exit 0
+    fi
     # Line is of fomat:
     # MERGE-COMMIT-ID PARENT PARENT ...
     # echo "LINE   $line"
@@ -77,5 +82,6 @@ do
 
     echo $this_tree ${parents} >> $TARGET_LOGFILE
 
+    counter=$((counter+1))
 # Read in merge commits we want to replay
 done < <(./find_merges.sh $TARGET_REPO)
