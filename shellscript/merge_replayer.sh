@@ -2,7 +2,7 @@
 
 ########
 # Usage:
-# ./merge_replayer.sh <clonable-repo-paty> [pygit | vanilla]
+# ./merge_replayer.sh <clonable-repo-path> [pygit | vanilla]
 #
 # Note: Requires libgit2 and pygit2 installed and on the path
 ########
@@ -20,11 +20,12 @@ TOOL_FOR_REPLAY=$2
 # the merge list can be obtained using the find_merges.sh script
 # MERGE_LIST=$3
 
-# Extract the basename from a git clone URL
+# # Extract the basename from a git clone URL
 REPO_BASENAME="$(basename -s .git $REPO_TO_CLONE)"
 
 TARGET_REPO="${REPO_BASENAME}-${TOOL_FOR_REPLAY}"
 MERGE_COMMAND="${TOOL_FOR_REPLAY}.sh" 
+
 
 # clone with vanilla (this is not a contentious step)
 git clone $REPO_TO_CLONE $TARGET_REPO
@@ -40,30 +41,42 @@ TARGET_LOGFILE=${TARGET_REPO}.merges
 
 while read line
 do
-    echo ${line}
-    branch_name=$(echo ${line} | sed "s/ /-/g")
-    all_parents=$(echo ${line} | sed "s/^.*\ //")
-    first_parent=$(echo ${line} | cut -d ' ' -f 2)
-    other_parents=$(echo ${all_parents} | sed "s/^.&\ //")
+    # Line is of fomat:
+    # MERGE-COMMIT-ID PARENT PARENT ...
+    # echo "LINE   $line"
 
+    branch_name=$(echo ${line} | sed "s/ /-/g")
+    first_parent=$(echo ${line} | cut -d ' ' -f 2)
+    all_parents=$(echo ${line} | cut -d ' ' -f 2-)
+
+    other_parents=$(echo ${line} | cut -d ' ' -f 3-)
+
+    # Checkout first parent of merge-to-replay
     git checkout -q -f ${first_parent}
+    # Create new branch there
     git checkout -q -b merges/${branch_name}
+    # Merge other parents of merge-to-replay into that branch
     ./${MERGE_COMMAND} ${other_parents}
-    echo ${branch_name}
+
+    # echo ${branch_name}
 
     this_tree=$(get_tree)
     this_parents=$(get_parents)
     
-    echo ${this_parents}
-    echo ${all_parents}
+    # echo ${this_parents}
+    # echo ${all_parents}
 
-    set -x
+    # set -x
     if [ "${all_parents}" != "${this_parents}" ]
     then
-        echo "Parents are not equal! ${all_parents} != ${this_parents}"
+        echo "Parents are not equal!"
+        echo "${all_parents} != ${this_parents}"
+    else
+        echo "Parents are equal!"
     fi
-    set +x
+    # set +x
 
     echo $this_tree ${all_parents} >> $TARGET_LOGFILE
 
+# Read in merge commits we want to replay
 done < <(./find_merges.sh $TARGET_REPO)
