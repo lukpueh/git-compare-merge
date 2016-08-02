@@ -10,21 +10,38 @@
 # include our functions
 . commit_utils.sh
 
-# Local or remote
+usage() {
+    echo "USAGE: $0 <clonable-repo-path> [vanilla | pygit | rugged]"
+    exit $1
+}
+
+if [ $# -ne 2 ]
+then
+    usage 1
+fi
+
+# Local or remote (ssh or https) clonable repo URL
 REPO_TO_CLONE=$1
 
-# We assume there's a tool called $2.sh
-# that takes the parent commit names and performs the merge
+# One of vanilla, rugged or pygit
 TOOL_FOR_REPLAY=$2
 
-# the merge list can be obtained using the find_merges.sh script
-# MERGE_LIST=$3
-
-# # Extract the basename from a git clone URL
+# Extract the basename from a git cloneable URL and create local repo name
 REPO_BASENAME="$(basename -s .git $REPO_TO_CLONE)"
-
 TARGET_REPO="${REPO_BASENAME}-${TOOL_FOR_REPLAY}"
-MERGE_COMMAND="${TOOL_FOR_REPLAY}.sh" 
+
+if [ "${TOOL_FOR_REPLAY}" == "vanilla" ]
+then
+    MERGE_COMMAND="git merge -q --no-ff -m 'commit'"
+elif [ "${TOOL_FOR_REPLAY}" == "pygit" ]
+then
+    MERGE_COMMAND="python pygit.py"
+elif [ "${TOOL_FOR_REPLAY}" == "rugged" ]
+then
+    MERGE_COMMAND="ruby rugged.rb"
+else
+    usage 2
+fi 
 
 # clone with vanilla (this is not a contentious step)
 git clone $REPO_TO_CLONE $TARGET_REPO
@@ -41,6 +58,7 @@ TARGET_LOGFILE=${TARGET_REPO}.merges
 counter=0
 while read line
 do
+    counter=$((counter+1))
     if [[ "$counter" -gt 100 ]]; 
     then
         exit 0
@@ -54,13 +72,19 @@ do
     second_parent=$(echo ${line} | cut -d ' ' -f 3)
     parents=$(echo ${line} | cut -d ' ' -f 2,3)
 
-
     # Checkout first parent of merge-to-replay
     git checkout -q -f ${first_parent}
     # Create new branch there
     git checkout -q -b merges/${branch_name}
+
     # Merge other parents of merge-to-replay into that branch
-    ./${MERGE_COMMAND} ${second_parent}
+    ${MERGE_COMMAND} ${second_parent}
+
+    if [ $? -ne 0 ]
+    then
+        echo "SKIPPED ${branch_name}" >> $TARGET_LOGFILE
+        continue
+    fi
 
     # echo ${branch_name}
 
@@ -74,14 +98,13 @@ do
     if [ "${parents}" != "${this_parents}" ]
     then
         echo "Parents are not equal!"
-        echo "${parents} != ${this_parents}"
+        # echo "${parents} != ${this_parents}"
     else
         echo "Parents are equal!"
     fi
     # set +x
 
-    echo $this_tree ${parents} >> $TARGET_LOGFILE
+    echo ${this_tree} ${branch_name} >> $TARGET_LOGFILE
 
-    counter=$((counter+1))
 # Read in merge commits we want to replay
 done < <(./find_merges.sh $TARGET_REPO)
